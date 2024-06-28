@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blockly Annotation Generator</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <h1>Blockly Annotation Generator</h1>
+    <label for="blockType">Block Type:</label>
+    <input type="text" id="blockType" placeholder="Enter block type...">
+    <textarea id="codeSegment" placeholder="Paste your code segment here...">console.log("this")
+    </textarea>
+    <button onclick="annotate()">Annotate</button>
+    <button onclick="reset_annotate()">Reset</button>
+    <div id="annotationDialog" class="dialog">
+        <div class="dialog-content">
+            <span class="close" onclick="closeDialog()">&times;</span>
+            <h2>Annotate Code</h2>
+            <label for="selectedText">Selected Text:</label>
+            <input type="text" id="selectedText" readonly>
+            <label for="annotationName">Annotation Name:</label>
+            <input type="text" id="annotationName">
+            <label for="type">Type:</label>
+            <select id="type">
+                <option value="input_value">Input Value</option>
+                <option value="dropdown">Dropdown</option>
+                <option value="input_text">Input Text</option>
+            </select>
+            <div id="optionsContainer" style="display: none;">
+                <label for="options">Options (comma separated):</label>
+                <input type="text" id="options">
+            </div>
+            <div id="defaultValueContainer" style="display: none;">
+                <label for="defaultValue">Default Value:</label>
+                <input type="text" id="defaultValue">
+            </div>
+            <button onclick="addAnnotation()">Add Annotation</button>
+        </div>
+    </div>
+    <h2>Generated Annotation:</h2>
+    <textarea id="generatedAnnotation"></textarea>
+    <button onclick="generateBlocklyCode()">Generate Blockly Code</button>
+    <h2>Blockly Block Definition:</h2>
+    <textarea id="blockDefinition"></textarea>
+    <h2>JavaScript Code Generator:</h2>
+    <textarea id="codeGenerator"></textarea>
+
+    <script src="script.js"></script>
+</body>
+</html>
