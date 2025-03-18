@@ -1,4 +1,6 @@
 inputApiKey = ''
+inputApiKey2 = ''
+inputApiKey3 = ''
 inputSystemPrompt = 'you are a helpful assistant'
 inputTemperature = 0.5
 inputName = 'anthropic'
@@ -24,8 +26,6 @@ async function callAnthropicClaude2(apiKey, prompt) {
   }
 }
 
-
-inputApiKey2 = ''
 inputSystemPrompt2 = 'you are a helpful assistant'
 inputTemperature2 = 0.5
 inputName2 = 'mistral'
@@ -56,12 +56,12 @@ async function callMistral(prompt) {
     const data = await response.json();
     return data.choices[0].message.content;
   } catch (error) {
-    return 'Error communicating with Mistral API:'+ error;
+    return 'Error communicating with Mistral API:' + error;
   }
 }
 
 
-async function callMistral3(img,type,fileType) {
+async function callMistral3(img, type, fileType) {
   const apiKey = inputApiKey2;
   const apiUrl = 'https://api.mistral.ai/v1/chat/completions';
   const headers = {
@@ -72,22 +72,22 @@ async function callMistral3(img,type,fileType) {
     model: "mistral-small-latest",
     temperature: inputTemperature2,
     messages: [
+      {
+        role: "user",
+        content: [
           {
-              role: "user",
-              content: [
-                  {
-                      type: "text",
-                      text: "what is this about?",
-                  },
-                  {
-                      type: type,
-                      image_url: {
-                          url: `data:${fileType};base64,${img}`,
-                      },
-                  },
-              ],
+            type: "text",
+            text: "what is this about?",
           },
-      ]
+          {
+            type: type,
+            image_url: {
+              url: `data:${fileType};base64,${img}`,
+            },
+          },
+        ],
+      },
+    ]
   });
 
   try {
@@ -95,7 +95,7 @@ async function callMistral3(img,type,fileType) {
     const data = await response.json();
     return data.choices[0].message.content;
   } catch (error) {
-    return 'Error communicating with Mistral API:'+ error;
+    return 'Error communicating with Mistral API:' + error;
   }
 }
 
@@ -130,7 +130,7 @@ async function callAnthropicClaude(prompt) {
     const data = await response.json();
     return data.choices[0].message.content;
   } catch (error) {
-    return 'Error communicating with Mistral API:'+ error;
+    return 'Error communicating with Mistral API:' + error;
   }
 }
 model = 'claude-3'
@@ -167,24 +167,110 @@ async function callAnthropicClaudeWithImage(imageBuffer) {
 async function describeImage(base64Image, prompt) {
 
   const chatResponse = await client.chat.complete({
-      model: "mistral-small-latest",
-      messages: [
+    model: "mistral-small-latest",
+    messages: [
+      {
+        role: "user",
+        content: [
           {
-              role: "user",
-              content: [
-                  {
-                      type: "text",
-                      text: prompt,
-                  },
-                  {
-                      type: "image_url",
-                      image_url: {
-                          url: `data:image/jpeg;base64,${base64Image}`,
-                      },
-                  },
-              ],
+            type: "text",
+            text: prompt,
           },
-      ],
+          {
+            type: "image_url",
+            image_url: {
+              url: `data:image/jpeg;base64,${base64Image}`,
+            },
+          },
+        ],
+      },
+    ],
   });
   return chatResponse.choices[0].message.content;
 }
+
+
+// https://api.openai.com/v1/chat/completions
+// -H "Content-Type: application/json" \
+//     -H "Authorization: Bearer $OPENAI_API_KEY" \
+//     -d '{
+//         "model": "gpt-4o",
+//         "messages": [{
+//             "role": "user",
+//             "content": "Write a one-sentence bedtime story about a unicorn."
+//         }]
+//     }'
+async function callOpenAI(prompt) {
+  const apiKey = inputApiKey3;
+  const apiUrl = 'https://api.openai.com/v1/chat/completions';
+  const headers = {
+    'Content-Type': 'application/json',
+    'Authorization': 'Bearer ' + apiKey
+  };
+  const body = JSON.stringify({
+    model: "gpt-4o",
+    messages: [
+      {
+        role: "user",
+        content: prompt
+      }
+    ]
+  });
+
+  try {
+    const response = await fetch(apiUrl, { method: 'POST', headers, body });
+    const data = await response.json();
+    return data.choices[0].message.content;
+  } catch (error) {
+    return 'Error communicating with OpenAI API:' + error;
+  }
+}
+
+
+const transcribeAudio = async (base64Audio) => {
+  // Convert the base64 string to a Uint8Array buffer
+  const buffer = Uint8Array.from(atob(base64Audio), c => c.charCodeAt(0));
+
+  // Create a Blob from the buffer
+  const blob = new Blob([buffer], { type: 'audio/webm' });
+
+  // Prepare the FormData for the request (OpenAI requires the audio to be sent as multipart/form-data)
+  const formData = new FormData();
+  formData.append('file', blob, 'audio.webm');
+  formData.append('model', 'whisper-1');
+
+  // Send the request to OpenAI API
+  try {
+    const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${inputApiKey3}`,
+      },
+      body: formData,
+    });
+
+    // Parse the response JSON
+    const data = await response.json();
+
+    if (response.ok) {
+      console.log('Transcription: ', data.text);
+      return data.text;  // Return the transcription text
+    } else {
+      console.error('Error transcribing audio:', data);
+      return null;
+    }
+  } catch (error) {
+    console.error('Error during transcription:', error);
+    return null;
+  }
+};
+
+
+// async function callOpenAIwthPromptAndImage(prompt, imageBuffer) {
+//   const
+//     apiUrl = 'https://api.openai.com/v1/chat/completions',
+//     headers = {
+//       'Content-Type': 'multipart/form-data',
+//       'Autho
+
+
