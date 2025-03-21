@@ -10,6 +10,7 @@
   <!-- Babel for JSX transformation -->
   <script crossorigin src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
   <script src="script2.js"></script>
+  <script src="ajents.js"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -67,20 +68,20 @@
       //   placeholder: 'Paragraph is here Input',
       //   initialValue: ''
       // },
-      {
-        type: 'text',
-        label: 'Lable text for text input Input',
-        name: 'textValue',
-        placeholder: 'Enter text here',
-        initialValue: 'what is xbox?'
-      },
       // {
-      //   type: 'multiline',
-      //   label: 'Multiline Input',
-      //   name: 'multilineValue',
-      //   placeholder: 'Enter multiple lines of text here',
-      //   initialValue: ''
+      //   type: 'text',
+      //   label: 'Lable text for text input Input',
+      //   name: 'textValue',
+      //   placeholder: 'Enter text here',
+      //   initialValue: 'what is xbox?'
       // },
+      {
+        type: 'multiline',
+        label: 'Multiline Input',
+        name: 'textValue',
+        placeholder: 'Enter multiple lines of text here',
+        initialValue: 'A cute baby sea otter'
+      },
       // {
       //   type: 'dropdown',
       //   label: 'Dropdown Input',
@@ -422,9 +423,10 @@
             let processedData = {};
             let base64Data = '';
             let fileType = '';
+            let dataUrl = '';
 
-
-            // const dataUrl = compositeInput.cameraValue;
+/////////////////// IMAGE
+            //  dataUrl = compositeInput.cameraValue;
             // // dataUrl = data:image/png;base64,iVBORw0KGgo...
             // base64Data = dataUrl.split(',')[1];
             /*
@@ -434,8 +436,11 @@
 
              */
 
+
+
+/////////////////// AUDIO
             // console.log("compositeInput", compositeInput.audioValue);
-            // const dataUrl = compositeInput.audioValue;
+            //  dataUrl = compositeInput.audioValue;
             // // // // dataUrl = data:image/png;base64,iVBORw0KGgo...
             // base64Data = dataUrl.split(',')[1];
             
@@ -444,14 +449,14 @@
             //  lastProcessedRef.current = compositeInput;
 
              
-
-            console.log("compositeInput", compositeInput.fileValue);
-            const dataUrl = compositeInput.fileValue;
-            // // // dataUrl = data:image/png;base64,iVBORw0KGgo...
-            base64Data = dataUrl.split(',')[1];
-            fileType = dataUrl.split(';')[0].split(':')[1];
-            console.log("fileBase64Data", base64Data);
-            console.log("fileType", fileType);
+/////////////////// FILE
+            // console.log("compositeInput", compositeInput.fileValue);
+            //  dataUrl = compositeInput.fileValue;
+            // // // // dataUrl = data:image/png;base64,iVBORw0KGgo...
+            // base64Data = dataUrl.split(',')[1];
+            // fileType = dataUrl.split(';')[0].split(':')[1];
+            // console.log("fileBase64Data", base64Data);
+            // console.log("fileType", fileType);
             
             //  processedData["_6DYoEttTYJ"] = await transcribeAudio(base64Data);
             //  onProcessed(processedData);
@@ -459,13 +464,13 @@
 
              
 
-
-            //  const dataUrl = compositeInput.textValue;
-            // // dataUrl = data:image/png;base64,iVBORw0KGgo...
+/////////////////// TEXT            
+             dataUrl = compositeInput.textValue;
+            // dataUrl = data:image/png;base64,iVBORw0KGgo...
             // base64Data = dataUrl.split(',')[1];
-            //  processedData["_6DYoEttTYJ"] = await callOpenAI(dataUrl);
-            //  onProcessed(processedData);
-            //  lastProcessedRef.current = compositeInput;
+             processedData["_6DYoEttTYJ"] = await generateSpeech(dataUrl);
+             onProcessed(processedData);
+             lastProcessedRef.current = compositeInput;
 
 
           
@@ -499,37 +504,7 @@
             //   });
 
 
-            // const fileUrl = compositeInput.fileValue;
-
-            fetch(fileUrl)
-              .then(response => {
-                console.log("response", response);
-                return response.blob()
-              })
-              .then(blob => {
-                // Convert blob to base64
-                const reader = new FileReader();
-                reader.readAsDataURL(blob);
-                reader.onloadend = () => {
-                  base64Data = reader.result;
-                  fileType = blob.type;
-                  console.log("fileBase64Data", base64Data);
-                  console.log("fileType", fileType);
-
-                  alert("callMistral3");
-                  alert(base64Data);
-                  alert(fileType);
-                  return callMistral3(base64Data, '', fileType);
-
-
-
-                };
-              }).then(data => {
-                processedData["_6DYoEttTYJ"] = data;
-                onProcessed(processedData);
-                lastProcessedRef.current = compositeInput;
-              });
-
+           
 
           }
         }
@@ -537,6 +512,39 @@
       }, [compositeInput, inputConfigs, onProcessed]);
       return null;
     };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     // === CompositeOutput Component ===
     // Displays the processed data.
@@ -552,13 +560,21 @@
                 {value && typeof value === 'string' && value.startsWith('data:')
                   ? 'Media captured'
                   : value}
-              </li>
-            ))}
-          </ul>
-        </div>
-      );
-    };
+                  <hr/>
+                  // audion mp3 player
+                  <audio controls>
+                    <source src={value} type="audio/mpeg" />
+                    Your browser does not support the audio element.
+                  </audio>
 
+                  </li>
+                ))}
+                </ul>
+                </div>
+              );
+            };
+            
+            // <img src={value} alt="Captured" />
     // === Main App Component ===
     const App = () => {
       const [compositeInput, setCompositeInput] = React.useState(null);

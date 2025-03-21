@@ -1,6 +1,7 @@
 inputApiKey = ''
 inputApiKey2 = ''
 inputApiKey3 = ''
+
 inputSystemPrompt = 'you are a helpful assistant'
 inputTemperature = 0.5
 inputName = 'anthropic'
@@ -18,7 +19,13 @@ async function callAnthropicClaude2(apiKey, prompt) {
 
   try {
     const response = await fetch(apiUrl, { method: 'POST', headers, body });
-    const data = await response.json();
+    const contentType = response.headers.get('Content-Type');
+    let data;
+    if (contentType && contentType.includes('application/json')) {
+        data = await response.json();
+    } else {
+        data = await response.text(); // Handle non-JSON responses
+    }
     return data.completion;
   } catch (error) {
     console.error('Error communicating with Anthropic API:', error);
@@ -274,3 +281,71 @@ const transcribeAudio = async (base64Audio) => {
 //       'Autho
 
 
+
+// curl https://api.openai.com/v1/images/generations \
+//   -H "Content-Type: application/json" \
+//   -H "Authorization: Bearer $OPENAI_API_KEY" \
+//   -d '{
+//     "model": "dall-e-3",
+//     "prompt": "A cute baby sea otter",
+//     "n": 1,
+//     "size": "1024x1024"
+//   }'
+
+const generateImage = async (prompt) => {
+  const apiUrl = 'https://api.openai.com/v1/images/generations';
+  const headers = {
+    'Content-Type': 'application/json',
+    'Authorization': 'Bearer ' + inputApiKey3
+  };
+  const body = JSON.stringify({
+    model: "dall-e-3",
+    prompt: prompt,
+    n: 1,
+    size: "1024x1024"
+  }); //  "A cute baby sea otter"
+
+  try {
+    const response = await fetch(apiUrl, { method: 'POST', headers, body });
+    const data = await response.json();
+    return data.data[0].url;
+  }
+  catch (error) {
+    return 'Error communicating with OpenAI API:' + error;
+  }
+}
+
+
+// curl https://api.openai.com/v1/audio/speech \
+//   -H "Authorization: Bearer $OPENAI_API_KEY" \
+//   -H "Content-Type: application/json" \
+//   -d '{
+//     "model": "tts-1",
+//     "input": "The quick brown fox jumped over the lazy dog.",
+//     "voice": "alloy"
+//   }' \
+
+const generateSpeech = async (prompt) => {
+  const apiUrl = 'https://api.openai.com/v1/audio/speech';
+  const headers = {
+    'Content-Type': 'application/json',
+    'Authorization': 'Bearer ' + inputApiKey3
+  };
+
+  const body = JSON.stringify({
+    model: "tts-1",
+    input: prompt,
+    voice: "alloy"
+  });
+
+  try {
+    const response = await fetch(apiUrl, { method: 'POST', headers, body });
+    const blob = await response.blob();
+    // Optionally, create an object URL for the audio
+    return URL.createObjectURL(blob);
+    
+  }
+  catch (error) {
+    return 'Error communicating with OpenAI API:' + error;
+  }
+}
