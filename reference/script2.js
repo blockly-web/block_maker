@@ -349,3 +349,57 @@ const generateSpeech = async (prompt) => {
     return 'Error communicating with OpenAI API:' + error;
   }
 }
+
+async function call_Read_CSV_FILE(csv_file) {
+    // IMPORTANT: Don't store API keys in code. Use environment variables or secure storage
+    const apiUrl = 'https://api.openai.com/v1/chat/completions';
+    
+    // Convert the CSV file to a string representation
+    const csv_content = await csv_file.text();
+    
+
+    // Create prompt using the CSV file string
+    const prompt = 'Please analyze the following CSV data and provide a summary in a structured format:\n\n' + csv_content;
+
+    const headers = {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${inputApiKey3}`
+    };
+    
+    // Prepare the API request body
+    const body = JSON.stringify({
+      model: "gpt-4o",
+      messages: [
+        { 
+          role: "user",
+          content: prompt
+        }
+      ]
+    });
+    
+    try {
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: headers,
+        body: body
+      }); 
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('API Error:', errorData);
+        throw new Error(`API request failed: ${errorData.error?.message || 'Unknown error'}`);
+      }
+      
+      const data = await response.json();
+      // create element and set the innerHtml to data
+      const element = document.createElement('div');
+      element.innerHTML = data;
+      // append the element to the body
+      document.body.appendChild(element);
+
+      return data;
+    } catch (error) {
+      console.error('Error calling OpenAI API:', error);
+      throw error;
+    }
+  } 
