@@ -403,3 +403,52 @@ async function call_Read_CSV_FILE(csv_file) {
       throw error;
     }
   } 
+
+
+
+async function call_gemini_to_generate_audio(prompt) {
+    // First get text response from Gemini
+    const apiKey = api_key2;
+    const apiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + apiKey;
+
+    const headers = {
+      'Content-Type': 'application/json'
+    };
+
+    const body = JSON.stringify({
+      contents: [{ parts: [{ text: prompt }] }]
+    });
+   
+    try { 
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: headers,
+        body: body
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('API Error:', errorData);
+        throw new Error(`API request failed: ${errorData.error?.message || 'Unknown error'}`);
+      }
+
+      const data = await response.json();
+      const text = data.candidates[0].content.parts[0].text;
+     
+      // Instead of trying to capture the audio, just return the text
+      // We'll handle speech synthesis directly in the UI
+      return {
+        text: text,
+        speak: function() {
+          const utterance = new SpeechSynthesisUtterance(this.text);
+          utterance.lang = 'en-GB';
+          utterance.voice = speechSynthesis.getVoices()[5];
+          window.speechSynthesis.speak(utterance);
+        }
+      };
+    } catch (error) {
+      console.error('Error generating audio:', error);
+      throw error;
+    }
+  }
+  
