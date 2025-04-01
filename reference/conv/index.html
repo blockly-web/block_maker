@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voice Conversation Assistant</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; }
+        #status { margin-bottom: 10px; font-weight: bold; }
+        #transcript { border: 1px solid #ccc; padding: 10px; min-height: 100px; margin-bottom: 10px; overflow-y: auto; max-height: 300px;}
+        #finalInfo { margin-top: 20px; border-top: 2px solid #333; padding-top: 10px; }
+        button { padding: 10px 15px; font-size: 1em; cursor: pointer; }
+        .user-msg, .assistant-msg { margin-bottom: 5px; }
+        .user-msg { color: blue; }
+        .assistant-msg { color: green; }
+    </style>
+</head>
+<body>
+    <h1>Voice Conversation Assistant</h1>
+
+    <div id="status">Status: Idle</div>
+    <button id="toggleButton">Start Conversation</button>
+
+    <h2>Transcript:</h2>
+    <div id="transcript"></div>
+
+    <div id="finalInfo">
+        <h2>Extracted Information:</h2>
+        <pre id="extractedData">Conversation not ended or extraction not run.</pre>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
