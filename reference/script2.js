@@ -451,4 +451,15 @@ async function call_gemini_to_generate_audio(prompt) {
       throw error;
     }
   }
-  
+
+async function text_to_audio(text) {
+  return {
+    text: text,
+    speak: function() {
+      const utterance = new SpeechSynthesisUtterance(this.text);
+      utterance.lang = 'en-GB';
+      utterance.voice = speechSynthesis.getVoices()[5];
+      window.speechSynthesis.speak(utterance);
+    }
+  }
+}
