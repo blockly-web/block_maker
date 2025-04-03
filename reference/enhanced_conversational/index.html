@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>Dynamic Composite Form with Multiple Input Types</title>
+  <!-- Import React and ReactDOM from CDN -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <!-- Babel for JSX transformation -->
+  <script crossorigin src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+  <script src="script2.js"></script>
+  <script src="script3.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+    }
+
+    form>div {
+      margin-bottom: 10px;
+    }
+
+    .file-drop,
+    .media-box {
+      border: 2px dashed #ccc;
+      padding: 20px;
+      text-align: center;
+      cursor: pointer;
+    }
+
+    video,
+    img {
+      max-width: 100%;
+      height: auto;
+    }
+
+    button {
+      margin-top: 5px;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="root"></div>
+  <script type="text/babel">
+    // === Input Configuration Array ===
+    // Modify this array to add or remove input types.
+    const inputConfigs = [
+      {
+        type: 'title',
+        label: '',
+        name: 'textValue',
+        placeholder: 'Header is here Input',
+        initialValue: ''
+      },
+      {
+        type: 'subtitle',
+        label: '',
+        name: 'textValue',
+        placeholder: 'Subtitle is here Input',
+        initialValue: 'what is xbox'
+      },
+      // {
+      //   type: 'paragraph',
+      //   label: '',
+      //   name: 'textValue',
+      //   placeholder: 'Paragraph is here Input',
+      //   initialValue: ''
+      // },
+      // {
+      //   type: 'text',
+      //   label: 'Lable text for text input Input',
+      //   name: 'textValue',
+      //   placeholder: 'Enter text here',
+      //   initialValue: 'what is xbox?'
+      // },
+      {
+        type: 'multiline',
+        label: 'Multiline Input',
+        name: 'textValue',
+        placeholder: 'Enter multiple lines of text here',
+        initialValue: 'A cute baby sea otter'
+      },
+      // {
+      //   type: 'dropdown',
+      //   label: 'Dropdown Input',
+      //   name: 'dropdownValue',
+      //   options: ['apple', 'banana', 'cherry'],
+      //   initialValue: 'apple'
+      // },
+      {
+        type: 'file',
+        label: 'File Drop Input',
+        name: 'fileValue',
+        initialValue: null
+      },
+      // {
+      //   type: 'audio',
+      //   label: 'Audio Recorder',
+      //   name: 'audioValue',
+      //   initialValue: null
+      // },
+      // {
+      //   type: 'camera',
+      //   label: 'Camera Capture',
+      //   name: 'cameraValue',
+      //   initialValue: null
+      // }
+    ];
+
+    // === AudioRecorder Component ===
+    // Uses MediaRecorder to capture audio.
+    const AudioRecorder = ({ onChange }) => {
+      const [recording, setRecording] = React.useState(false);
+      const [mediaRecorder, setMediaRecorder] = React.useState(null);
+      const [audioURL, setAudioURL] = React.useState(null);
+      const chunksRef = React.useRef([]);
+
+      React.useEffect(() => {
+        // Check for supported MIME type.
+        const mimeType = MediaRecorder.isTypeSupported('audio/webm')
+          ? 'audio/webm'
+          : 'audio/ogg';
+        navigator.mediaDevices.getUserMedia({ audio: true })
+          .then(stream => {
+            const recorder = new MediaRecorder(stream, { mimeType });
+            setMediaRecorder(recorder);
+            recorder.ondataavailable = e => {
+              if (e.data && e.data.size > 0) {
+                chunksRef.current.push(e.data);
+              }
+            };
+            recorder.onstop = () => {
+              if (chunksRef.current.length > 0) {
+                const blob = new Blob(chunksRef.current, { type: mimeType });
+                console.log("Audio blob:", chunksRef.current);
+                // Convert blob to base64 string
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                  const base64String = reader.result.split(',')[1]; // Get base64 part
+                  console.log("Base64 Audio String:", base64String);
+                  setAudioURL(`data:${mimeType};base64,${base64String}`);
+                  onChange(`data:${mimeType};base64,${base64String}`);
+                };
+                reader.readAsDataURL(blob);
+                chunksRef.current = [];
+              } else {
+                console.error("No audio data captured.");
+              }
+            };
+          })
+          .catch(err => console.error("Audio error:", err));
+      }, [onChange]);
+
+      const startRecording = () => {
+        if (mediaRecorder) {
+          setRecording(true);
+          mediaRecorder.start();
+        }
+      };
+
+      const stopRecording = () => {
+        if (mediaRecorder && recording) {
+          mediaRecorder.stop();
+          setRecording(false);
+        }
+      };
+
+      return (
+        <div className="media-box">
+          <div>
+            {audioURL ? (
+              <audio controls src={audioURL}></audio>
+            ) : (
+              <p>No recording yet.</p>
+            )}
+          </div>
+          <div>
+            {!recording ? (
+              <div onClick={startRecording}>Start Recording</div>
+            ) : (
+              <div onClick={stopRecording}>Stop Recording</div>
+            )}
+          </div>
+        </div>
+      );
+    };
+    // === CameraCapture Component ===
+    // Uses getUserMedia to show video and capture a photo.
+    const CameraCapture = ({ onChange }) => {
+      const videoRef = React.useRef(null);
+      const [capturedImage, setCapturedImage] = React.useState(null);
+      const [stream, setStream] = React.useState(null);
+
+      React.useEffect(() => {
+        navigator.mediaDevices.getUserMedia({ video: true })
+          .then((stream) => {
+            setStream(stream);
+            if (videoRef.current) {
+              videoRef.current.srcObject = stream;
+            }
+          })
+          .catch(err => console.error("Camera error:", err));
+        return () => {
+          if (stream) {
+            stream.getTracks().forEach(track => track.stop());
+          }
+        };
+      }, []);
+
+      const capturePhoto = () => {
+        const video = videoRef.current;
+        if (!video) return;
+        const canvas = document.createElement('canvas');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const dataURL = canvas.toDataURL('image/png');
+        setCapturedImage(dataURL);
+        console.log("dataURL", dataURL);
+        onChange(dataURL);
+        // Optionally stop the video stream after capture.
+        if (stream) {
+          stream.getTracks().forEach(track => track.stop());
+        }
+      };
+
+      return (
+        <div className="media-box">
+          <div>
+            {capturedImage ? (
+              <img src={capturedImage} alt="Captured" />
+            ) : (
+              <video ref={videoRef} autoPlay playsInline width="300" />
+            )}
+          </div>
+          {!capturedImage && (
+            <div>
+              <button onClick={capturePhoto}>Capture Photo</button>
+            </div>
+          )}
+        </div>
+      );
+    };
+
+    // === DynamicInputForm Component ===
+    // Renders inputs based on the configuration.
+    const DynamicInputForm = ({ inputConfigs, onFormSubmit }) => {
+      // Set initial state for all inputs.
+      const initialFormData = inputConfigs.reduce((acc, config) => {
+        acc[config.name] = config.type === 'file' || config.type === 'audio' || config.type === 'camera'
+          ? null
+          : config.initialValue || '';
+        return acc;
+      }, {});
+      const [formData, setFormData] = React.useState(initialFormData);
+
+      const handleChange = (e, name) => {
+        setFormData({ ...formData, [name]: e.target.value });
+      };
+
+      const handleMediaChange = (name, value) => {
+        setFormData({ ...formData, [name]: value });
+      };
+
+      // For file drop input.
+      const handleFileChange = (name, file) => {
+        setFormData({ ...formData, [name]: file });
+      };
+
+      const handleSubmit = (e) => {
+        e.preventDefault();
+        onFormSubmit(formData);
+      };
+
+      return (
+        <form onSubmit={handleSubmit}>
+          <a href="image_to_ai.html">image_to_ai</a>
+          {inputConfigs.map((config, idx) => (
+            <div key={idx}>
+              <label>
+                {config.label ? config.label + ': ' : ''}
+                {config.type === 'title' && (
+                  <h1>{config.placeholder}</h1>
+                )}
+                {config.type === 'subtitle' && (
+                  <h3>{config.placeholder}</h3>
+                )}
+                {config.type === 'paragraph' && (
+                  <p>{config.placeholder}</p>
+                )}
+                {config.type === 'text' && (
+                  <input
+                    type="text"
+                    placeholder={config.placeholder}
+                    value={formData[config.name]}
+                    onChange={(e) => handleChange(e, config.name)}
+                  />
+                )}
+                {config.type === 'multiline' && (
+                  <textarea
+                    placeholder={config.placeholder}
+                    value={formData[config.name]}
+                    onChange={(e) => handleChange(e, config.name)}
+                    rows="4"
+                    cols="50"
+                  />
+                )}
+                {config.type === 'dropdown' && (
+                  <select
+                    value={formData[config.name]}
+                    onChange={(e) => handleChange(e, config.name)}
+                  >
+                    {config.options.map((option, oIdx) => (
+                      <option key={oIdx} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </select>
+                )}
+                {config.type === 'file' && (
+                  <div
+                    className="file-drop"
+                    onDragOver={(e) => e.preventDefault()}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                        const file = e.dataTransfer.files[0];
+                        handleFileChange(config.name, file);
+                        e.dataTransfer.clearData();
+                      }
+                    }}
+                  >
+                    {formData[config.name]
+                      ? formData[config.name].name
+                      : 'Drag & drop a file here or click to select'}
+                    <br />
+                    <input
+                      type="file"
+                      onChange={(e) => {
+                        if (e.target.files && e.target.files.length > 0) {
+                          handleFileChange(config.name, e.target.files[0]);
+                        }
+                      }}
+                      style={{ display: 'none' }}
+                      id={`fileInput-${idx}`}
+                    />
+                    <label
+                      htmlFor={`fileInput-${idx}`}
+                      style={{ cursor: 'pointer', textDecoration: 'underline', color: 'blue' }}
+                    >
+                      Browse
+                    </label>
+                  </div>
+                )}
+                {config.type === 'audio' && (
+                  <AudioRecorder onChange={(value) => handleMediaChange(config.name, value)} />
+                )}
+                {config.type === 'camera' && (
+                  <CameraCapture onChange={(value) => handleMediaChange(config.name, value)} />
+                )}
+              </label>
+            </div>
+          ))}
+          <button type="submit">Submit Form</button>
+        </form>
+      );
+    };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    // === CompositeProcessor Component ===
+    // Processes the composite input and calls onProcessed only if the input changed.
+    const CompositeProcessor = ({ compositeInput, inputConfigs, onProcessed }) => {
+      const lastProcessedRef = React.useRef(null);
+      React.useEffect(() => {
+        async function processData() {
+          if (compositeInput && lastProcessedRef.current !== compositeInput) {
+
+            let processedData = {};
+            let base64Data = '';
+            let fileType = '';
+            let dataUrl = '';
+
+/////////////////// IMAGE
+            //  dataUrl = compositeInput.cameraValue;
+            // // dataUrl = data:image/png;base64,iVBORw0KGgo...
+            // base64Data = dataUrl.split(',')[1];
+            /*
+             processedData["_6DYoEttTYJ"] = await callMistral3(base64Data,'image_url', fileType);
+             onProcessed(processedData);
+             lastProcessedRef.current = compositeInput;
+
+             */
+
+
+
+/////////////////// AUDIO
+            // console.log("compositeInput", compositeInput.audioValue);
+            //  dataUrl = compositeInput.audioValue;
+            // // // // dataUrl = data:image/png;base64,iVBORw0KGgo...
+            // base64Data = dataUrl.split(',')[1];
+            
+            //  processedData["_6DYoEttTYJ"] = await transcribeAudio(base64Data);
+            //  onProcessed(processedData);
+            //  lastProcessedRef.current = compositeInput;
+
+             
+/////////////////// FILE
+            // console.log("compositeInput", compositeInput.fileValue);
+            //  dataUrl = compositeInput.fileValue;
+            // // // // dataUrl = data:image/png;base64,iVBORw0KGgo...
+            // base64Data = dataUrl.split(',')[1];
+            // fileType = dataUrl.split(';')[0].split(':')[1];
+            // console.log("fileBase64Data", base64Data);
+            // console.log("fileType", fileType);
+            
+            //  processedData["_6DYoEttTYJ"] = await transcribeAudio(base64Data);
+            //  onProcessed(processedData);
+            //  lastProcessedRef.current = compositeInput;
+
+             
+
+/////////////////// TEXT            
+             dataUrl = compositeInput.textValue;
+            // dataUrl = data:image/png;base64,iVBORw0KGgo...
+            // base64Data = dataUrl.split(',')[1];
+             processedData["_6DYoEttTYJ"] = await text_to_audio(dataUrl);
+             processedData["M6DYoEttTYJ"] = toggleConversation((c) => {
+              processedData["sf6DYoEttTYJ"] = c;
+              console.log("processedData", processedData);
+              console.log("processedData", processedData["sf6DYoEttTYJ"]);
+              onProcessed(processedData["sf6DYoEttTYJ"]);
+            });
+             onProcessed(processedData);
+             lastProcessedRef.current = compositeInput;
+
+
+          
+
+            // console.log("audioUrl", audioUrl);
+            // fetch(audioUrl)
+            //   .then(response => {
+            //     console.log("response", response);
+            //     return response.blob()
+            //   })
+            //   .then(blob => {
+            //     // Convert blob to base64
+            //     const reader = new FileReader();
+            //     reader.readAsDataURL(blob);
+            //     reader.onloadend = () => {
+            //       base64Data = reader.result;
+            //       fileType = blob.type;
+            //       console.log("audioBase64Data", base64Data);
+            //       console.log("fileType", fileType);
+
+            //       return "this is audio";
+            //       // return callMistral3(base64Data,'', fileType);
+
+
+
+            //     };
+            //   }).then(data => {
+            //     processedData["_6DYoEttTYJ"] = data;
+            //     onProcessed(processedData);
+            //     lastProcessedRef.current = compositeInput;
+            //   });
+
+
+           
+
+          }
+        }
+        processData();
+      }, [compositeInput, inputConfigs, onProcessed]);
+      return null;
+    };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    // === CompositeOutput Component ===
+    // Displays the processed data.
+    const CompositeOutput = ({ processedData }) => {
+      if (!processedData) return null;
+      return (
+        <div>
+          <h3>Processed Output:</h3>
+          <ul>
+            {Object.entries(processedData).map(([key, value], idx) => (
+              <li key={idx}>
+                <strong>{key}</strong>:{" "}
+                {value && typeof value === 'string' && value.startsWith('data:')
+                  ? 'Media captured'
+                  : "not media captured"}
+                  <hr/>
+                  {value && typeof value === 'string'
+                  ? value
+                  : 'not string'}
+                  <hr/>
+                  {typeof value === 'object' && value !== null
+                  ? JSON.stringify(value)
+                  : 'not object'}
+                  <hr/>
+                
+
+                  </li>
+                ))}
+                </ul>
+                </div>
+              );
+            };
+            // audion mp3 player
+                  // <audio controls>
+                  //   <source src={value} type="audio/mpeg" />
+                  //   Your browser does not support the audio element.
+                  // </audio>
+                  // div with click to play
+
+
+            // <img src={value} alt="Captured" />
+    // === Main App Component ===
+    const App = () => {
+      const [compositeInput, setCompositeInput] = React.useState(null);
+      const [processedData, setProcessedData] = React.useState(null);
+
+      // Memoize the onProcessed callback so its reference stays stable.
+      const handleProcessed = React.useCallback((data) => {
+        setProcessedData(data);
+      }, []);
+
+      return (
+        <div>
+          <DynamicInputForm
+            inputConfigs={inputConfigs}
+            onFormSubmit={(data) => setCompositeInput(data)}
+          />
+          <CompositeProcessor
+            compositeInput={compositeInput}
+            inputConfigs={inputConfigs}
+            onProcessed={handleProcessed}
+          />
+          <CompositeOutput processedData={processedData} />
+        </div>
+      );
+    };
+
+    // Render the App component.
+    ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+  </script>
+</body>
+
+</html>
