@@ -1,21 +1,24 @@
 // --- Behavior ---
-const PAUSE_DURATION_MS = 5000; // How long the user must pause (in ms) to trigger assistant reply
+const PAUSE_DURATION_MS =  1000; //5000; // How long the user must pause (in ms) to trigger assistant reply
 
 // --- Speech Recognition ---
 const SPEECH_RECOGNITION_LANG = 'en-US'; // Language code (e.g., 'en-US', 'es-ES')
 const RESTART_LISTENER_DELAY_MS = 250; // Delay before restarting listener after it stops unexpectedly
 const RESTART_AFTER_ERROR_DELAY_MS = 500; // Delay before restarting after 'no-speech' error
-
+const ERROR_MSG_SPEECH_API_UNSUPPORTED = 'Speech recognition or synthesis not supported in this browser.';
+const ERROR_MSG_MIC_NOT_FOUND = 'Microphone not found. Please check your device settings.';
+const ERROR_MSG_DEFAULT_SPEECH_RECOGNITION = 'Speech recognition error occurred. Please try again.';
+const ERROR_MSG_MIC_PERMISSION_DENIED = 'Microphone permission denied. Please allow access.';
 // --- Speech Synthesis ---
 const SPEECH_SYNTHESIS_LANG = 'en-US'; // Language code for assistant voice
 const SPEECH_VOICE_INDEX =5;
 const SPEECH_SYNTHESIS_RATE = 1.0;   // Speaking rate (0.1 to 10)
-const GREETING_MESSAGE = "Hello! How can I help you today?";
+const GREETING_MESSAGE = "Hi" // "Hello! How can I help you today?";
 
 
 // --- DOM Elements ---
 const statusDiv = document.getElementById('status') || document.createElement('div');
-const toggleButton = document.getElementById('toggleButton') || document.createElement('button');
+// const toggleButton = document.getElementById('toggleButton') || document.createElement('button');
 const transcriptDiv = document.getElementById('transcript') || document.createElement('div');
 const extractedDataDiv = document.getElementById('extractedData') || document.createElement('div');
 
@@ -44,10 +47,10 @@ const speechSynthesis = window.speechSynthesis;
 
 if (!SpeechRecognition || !SpeechSynthesisUtterance || !speechSynthesis) {
     statusDiv.textContent = ERROR_MSG_SPEECH_API_UNSUPPORTED;
-    toggleButton.disabled = true;
+    // toggleButton.disabled = true;
 } else {
     speechSynth = speechSynthesis;
-    toggleButton.addEventListener('click', toggleConversation);
+    // toggleButton.addEventListener('click', toggleConversation);
     setupSpeechRecognition(); // Setup initially but don't start
 }
 
@@ -152,9 +155,9 @@ function setupSpeechRecognition() {
   };
 }
 
-function toggleConversation(event) {
+function toggleConversation(event, onHungUp) {
   if (isListening) {
-      return stopConversation(event);
+      return stopConversation(onHungUp);
   } else {
       if(event)
       onHandlePause = event;
@@ -167,7 +170,7 @@ function startConversation() {
   if (!SpeechRecognition || recognizing) return; // Guard against unsupported/already starting
 
   isListening = true;
-  toggleButton.textContent = 'Stop Conversation';
+//   toggleButton.textContent = 'Stop Conversation';
   statusDiv.textContent = 'Status: Initializing...';
   transcriptDiv.innerHTML = ''; // Clear transcript display
   extractedDataDiv.textContent = 'Conversation not ended or extraction not run.';
@@ -220,7 +223,7 @@ async function handleUserPause(userText) {
   
   conversationHistory.push({ role: 'user', content: userText });
   finalUserTranscript = ''; // Reset accumulated transcript for the *next* user turn
-  onHandlePause({'conversationHistory': conversationHistory});
+  onHandlePause( conversationHistory); // Call the function passed in the event
 }
 
 // --- Text-to-Speech Function ---
@@ -282,7 +285,7 @@ function speak(text) {
 }
 
 
-function stopConversation() {
+function stopConversation(onHungUp) {
   if (!isListening) return;
 
   console.log("Stopping conversation.");
@@ -307,6 +310,14 @@ function stopConversation() {
         onStopConversation(conversationHistory);
        }
    }, 100); // Short delay for state consistency
-
+   onHungUp(conversationHistory);
    return conversationHistory;
+}
+
+function addSystemResponse(systemResponse) {
+    speak(systemResponse)
+    console.log("----------------------Adding system response to conversation history:", systemResponse);
+    conversationHistory.push({ role: 'assistant', content: systemResponse });
+    transcriptDiv.innerHTML += `<div class="assistant-response">${systemResponse}</div>`;
+    extractedDataDiv.textContent = 'Conversation not ended or extraction not run.';
 }
